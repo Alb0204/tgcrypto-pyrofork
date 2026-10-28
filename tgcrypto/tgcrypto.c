@@ -34,41 +34,52 @@
 static PyObject *ige(PyObject *args, uint8_t encrypt) {
     Py_buffer data, key, iv;
     uint8_t *buf;
-    PyObject *out;
+    PyObject *out = NULL;
 
     if (!PyArg_ParseTuple(args, "y*y*y*", &data, &key, &iv))
         return NULL;
 
     if (data.len == 0) {
         PyErr_SetString(PyExc_ValueError, "Data must not be empty");
-        return NULL;
+        goto done;
+    }
+
+    if (data.len > UINT32_MAX) {
+        PyErr_SetString(PyExc_ValueError, "Data size must not exceed 4 GiB");
+        goto done;
     }
 
     if (data.len % 16 != 0) {
         PyErr_SetString(PyExc_ValueError, "Data size must match a multiple of 16 bytes");
-        return NULL;
+        goto done;
     }
 
     if (key.len != 32) {
         PyErr_SetString(PyExc_ValueError, "Key size must be exactly 32 bytes");
-        return NULL;
+        goto done;
     }
 
     if (iv.len != 32) {
         PyErr_SetString(PyExc_ValueError, "IV size must be exactly 32 bytes");
-        return NULL;
+        goto done;
     }
 
     Py_BEGIN_ALLOW_THREADS
         buf = ige256(data.buf, data.len, key.buf, iv.buf, encrypt);
     Py_END_ALLOW_THREADS
 
-    PyBuffer_Release(&data);
-    PyBuffer_Release(&key);
-    PyBuffer_Release(&iv);
+    if (buf == NULL) {
+        PyErr_NoMemory();
+        goto done;
+    }
 
     out = Py_BuildValue("y#", buf, data.len);
     free(buf);
+
+done:
+    PyBuffer_Release(&data);
+    PyBuffer_Release(&key);
+    PyBuffer_Release(&iv);
 
     return out;
 }
@@ -84,46 +95,58 @@ static PyObject *ige256_decrypt(PyObject *self, PyObject *args) {
 static PyObject *ctr256_encrypt(PyObject *self, PyObject *args) {
     Py_buffer data, key, iv, state;
     uint8_t *buf;
-    PyObject *out;
+    PyObject *out = NULL;
 
     if (!PyArg_ParseTuple(args, "y*y*y*y*", &data, &key, &iv, &state))
         return NULL;
 
     if (data.len == 0) {
         PyErr_SetString(PyExc_ValueError, "Data must not be empty");
-        return NULL;
+        goto done;
+    }
+
+    if (data.len > UINT32_MAX) {
+        PyErr_SetString(PyExc_ValueError, "Data size must not exceed 4 GiB");
+        goto done;
     }
 
     if (key.len != 32) {
         PyErr_SetString(PyExc_ValueError, "Key size must be exactly 32 bytes");
-        return NULL;
+        goto done;
     }
 
     if (iv.len != 16) {
         PyErr_SetString(PyExc_ValueError, "IV size must be exactly 16 bytes");
-        return NULL;
+        goto done;
     }
 
     if (state.len != 1) {
         PyErr_SetString(PyExc_ValueError, "State size must be exactly 1 byte");
-        return NULL;
+        goto done;
     }
 
     if (*(uint8_t *) state.buf > 15) {
         PyErr_SetString(PyExc_ValueError, "State value must be in the range [0, 15]");
-        return NULL;
+        goto done;
     }
 
     Py_BEGIN_ALLOW_THREADS
         buf = ctr256(data.buf, data.len, key.buf, iv.buf, state.buf);
     Py_END_ALLOW_THREADS
 
-    PyBuffer_Release(&data);
-    PyBuffer_Release(&key);
-    PyBuffer_Release(&iv);
+    if (buf == NULL) {
+        PyErr_NoMemory();
+        goto done;
+    }
 
     out = Py_BuildValue("y#", buf, data.len);
     free(buf);
+
+done:
+    PyBuffer_Release(&data);
+    PyBuffer_Release(&key);
+    PyBuffer_Release(&iv);
+    PyBuffer_Release(&state);
 
     return out;
 }
@@ -131,41 +154,52 @@ static PyObject *ctr256_encrypt(PyObject *self, PyObject *args) {
 static PyObject *cbc(PyObject *args, uint8_t encrypt) {
     Py_buffer data, key, iv;
     uint8_t *buf;
-    PyObject *out;
+    PyObject *out = NULL;
 
     if (!PyArg_ParseTuple(args, "y*y*y*", &data, &key, &iv))
         return NULL;
 
     if (data.len == 0) {
         PyErr_SetString(PyExc_ValueError, "Data must not be empty");
-        return NULL;
+        goto done;
+    }
+
+    if (data.len > UINT32_MAX) {
+        PyErr_SetString(PyExc_ValueError, "Data size must not exceed 4 GiB");
+        goto done;
     }
 
     if (data.len % 16 != 0) {
         PyErr_SetString(PyExc_ValueError, "Data size must match a multiple of 16 bytes");
-        return NULL;
+        goto done;
     }
 
     if (key.len != 32) {
         PyErr_SetString(PyExc_ValueError, "Key size must be exactly 32 bytes");
-        return NULL;
+        goto done;
     }
 
     if (iv.len != 16) {
         PyErr_SetString(PyExc_ValueError, "IV size must be exactly 16 bytes");
-        return NULL;
+        goto done;
     }
 
     Py_BEGIN_ALLOW_THREADS
         buf = cbc256(data.buf, data.len, key.buf, iv.buf, encrypt);
     Py_END_ALLOW_THREADS
 
-    PyBuffer_Release(&data);
-    PyBuffer_Release(&key);
-    PyBuffer_Release(&iv);
+    if (buf == NULL) {
+        PyErr_NoMemory();
+        goto done;
+    }
 
     out = Py_BuildValue("y#", buf, data.len);
     free(buf);
+
+done:
+    PyBuffer_Release(&data);
+    PyBuffer_Release(&key);
+    PyBuffer_Release(&iv);
 
     return out;
 }
@@ -230,14 +264,25 @@ static PyMethodDef methods[] = {
     {NULL}
 };
 
+static PyModuleDef_Slot slots[] = {
+#ifdef Py_mod_multiple_interpreters
+    {Py_mod_multiple_interpreters, Py_MOD_PER_INTERPRETER_GIL_SUPPORTED},
+#endif
+#ifdef Py_mod_gil
+    {Py_mod_gil, Py_MOD_GIL_NOT_USED},
+#endif
+    {0, NULL}
+};
+
 static struct PyModuleDef module = {
     PyModuleDef_HEAD_INIT,
     "TgCrypto",
     DESCRIPTION,
-    -1,
-    methods
+    0,
+    methods,
+    slots
 };
 
 PyMODINIT_FUNC PyInit_tgcrypto(void) {
-    return PyModule_Create(&module);
+    return PyModuleDef_Init(&module);
 }
