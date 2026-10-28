@@ -13,7 +13,6 @@ permissions:
   contents: read
 
 env:
-  CIBW_ENABLE: pypy
   CIBW_TEST_REQUIRES: pytest
   CIBW_TEST_COMMAND: pytest {project}/tests -q -p no:cacheprovider
   CIBW_BUILD_VERBOSITY: 1
@@ -27,20 +26,13 @@ jobs:
       matrix:
         include:
         - os: ubuntu-latest
-          archs: x86_64 i686
+          archs: x86_64
         - os: ubuntu-24.04-arm
-          archs: aarch64 armv7l
-        - os: ubuntu-latest
-          archs: ppc64le
-          qemu: true
-        - os: ubuntu-latest
-          archs: s390x
-          qemu: true
-        - os: ubuntu-latest
-          archs: riscv64
-          qemu: true
+          archs: aarch64
+        - os: macos-15-intel
+          archs: x86_64
         - os: macos-latest
-          archs: x86_64 arm64
+          archs: arm64
         - os: windows-latest
           archs: AMD64 x86
         - os: windows-11-arm
@@ -52,12 +44,6 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: '3.x'
-
-      - name: Set up QEMU
-        if: matrix.qemu
-        uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
-        with:
-          platforms: all
 
       - name: Install cibuildwheel
         run: python -m pip install cibuildwheel==4.3.5
