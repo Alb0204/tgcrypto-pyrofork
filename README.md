@@ -12,12 +12,24 @@ cryptographic algorithms Telegram requires, namely:
 
 ## Requirements
 
-- Python 3.7 or higher.
+- Python 3.10 or higher.
 
 ## Installation
 
+Prebuilt wheels for CPython 3.10-3.15 (including the free-threaded 3.14t/3.15t builds) and PyPy are
+attached to every [GitHub release](https://github.com/Alb0204/tgcrypto-pyrofork/releases) of this fork, for
+Linux (manylinux and musllinux on x86_64, i686, aarch64, armv7l, ppc64le, s390x, riscv64), macOS (x86_64,
+arm64) and Windows (AMD64, x86, ARM64). Point pip at the release page:
+
 ``` bash
-$ pip3 install -U tgcrypto
+$ pip3 install -U tgcrypto-pyrofork --find-links https://github.com/Alb0204/tgcrypto-pyrofork/releases/expanded_assets/v1.2.9
+```
+
+Or, with uv, in `pyproject.toml`:
+
+``` toml
+[tool.uv]
+find-links = ["https://github.com/Alb0204/tgcrypto-pyrofork/releases/expanded_assets/v1.2.9"]
 ```
 
 ## API
@@ -150,8 +162,8 @@ print(data == cbc_decrypted)  # True
 
 ## Testing
 
-1. Clone this repository: `git clone https://github.com/pyrogram/tgcrypto`.
-2. Enter the directory: `cd tgcrypto`.
+1. Clone this repository: `git clone https://github.com/Alb0204/tgcrypto-pyrofork`.
+2. Enter the directory: `cd tgcrypto-pyrofork`.
 3. Install `tox`: `pip3 install tox`
 4. Run tests: `tox`.
 
