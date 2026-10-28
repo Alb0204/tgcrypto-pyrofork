@@ -20,8 +20,8 @@ Issues are disabled on upstream, so pull requests are the only intake.
 
 | Branch | Decision | Notes |
 |--------|----------|-------|
-| `mac` | Superseded | 2024 CircleCI/aarch64 experiment on 1.2.7; merging it would drop 3.14 and revert the version. |
-| `staging` | Superseded | 1.2.7 release candidate; everything useful landed on `master`. |
+| `mac` | Superseded, deleted from the fork 2026-10-28 | 2024 CircleCI/aarch64 experiment on 1.2.7; merging it would drop 3.14 and revert the version. |
+| `staging` | Superseded, deleted from the fork 2026-10-28 | 1.2.7 release candidate; everything useful landed on `master`. |
 
 ## Fork changes
 
@@ -31,13 +31,20 @@ Issues are disabled on upstream, so pull requests are the only intake.
 | 1.2.9 | `malloc` failures raise `MemoryError` instead of dereferencing `NULL`; inputs over 4 GiB raise `ValueError` instead of being truncated to `uint32_t`. |
 | 1.2.9 | AES word loads/stores are byte-wise big-endian instead of a cast to `uint32_t *` plus an unconditional swap, which produced wrong ciphertext on big-endian hosts (s390x failed the NIST CBC/CTR vectors) and was an unaligned access. `tests/ige` gained a known-answer test, because the random IGE tests only round-trip. |
 | 1.2.9 | Multi-phase module init declaring `Py_mod_gil` (no GIL needed) and per-interpreter GIL support. |
-| 1.2.9 | Wheels for CPython 3.10-3.15 (+3.14t/3.15t) and PyPy on Linux/macOS/Windows, all architectures cibuildwheel offers, published as GitHub release assets rather than to PyPI (the PyPI name is upstream's). |
+| 1.2.9 | Wheels for CPython 3.10-3.15 (+3.14t/3.15t): Linux x86_64/aarch64 (glibc and musl), macOS x86_64/arm64, Windows AMD64/x86/ARM64. Published as GitHub release assets, not to PyPI, because the PyPI name is upstream's. Upstream 1.2.8 shipped no macOS wheels at all. |
 
 ## Deliberately unchanged
 
 - `ctr256_*` advances `iv` and `state` in place even when they are `bytes`. Pyrogram-based clients
   (kurigram's `tcp_abridged_o.py`) rely on that to keep the CTR stream position between calls, so
   it is part of the API.
+
+## Platforms deliberately not built
+
+i686, armv7l, ppc64le, s390x and riscv64 Linux and PyPy are not built. Upstream never shipped them,
+there is next to no demand, and the emulated builds took 20+ minutes each. Those platforms install
+from the sdist, and kurigram falls back to `pyaes` when `tgcrypto` is missing. The big-endian fix
+in `aes256.c` stays because it is correct C regardless of platform.
 
 ## Telegram protocol check
 
