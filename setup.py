@@ -64,7 +64,7 @@ setup(
         "Documentation": "https://pyrofork.mayuri.my.id",
     },
     python_requires="~=3.10",
-    packages=find_packages(),
+    packages=find_packages(exclude=["tests", "tests.*"]),
     test_suite="tests",
     zip_safe=False,
     ext_modules=[
