@@ -20,11 +20,10 @@
 
 #include "aes256.h"
 
-#define LROTL(x) (((x) << 8) | ((x) >> 24))
-#define LROTR(x) (((x) >> 8) | ((x) << 24))
-#define SWAP(x) ((LROTL((x)) & 0x00ff00ff) | (LROTR((x)) & 0xff00ff00))
-#define GET(p) SWAP(*((uint32_t *)(p)))
-#define PUT(ct, st) (*((uint32_t *)(ct)) = SWAP((st)))
+// Big-endian word access one byte at a time, so the result does not depend on the host's byte
+// order or on the alignment of the buffer. Compilers lower it to a single load/store plus bswap.
+#define GET(p) (((uint32_t) (p)[0] << 24) | ((uint32_t) (p)[1] << 16) | ((uint32_t) (p)[2] << 8) | (uint32_t) (p)[3])
+#define PUT(ct, st) ((ct)[0] = (uint8_t) ((st) >> 24), (ct)[1] = (uint8_t) ((st) >> 16),                      (ct)[2] = (uint8_t) ((st) >> 8), (ct)[3] = (uint8_t) (st))
 
 static const uint32_t Te0[256] = {
     0xc66363a5, 0xf87c7c84, 0xee777799, 0xf67b7b8d, 0xfff2f20d, 0xd66b6bbd, 0xde6f6fb1, 0x91c5c554,

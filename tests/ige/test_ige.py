@@ -67,6 +67,26 @@ class TestIGE256Input(unittest.TestCase):
             tgcrypto.ige256_decrypt(os.urandom(16), os.urandom(32), os.urandom(31))
 
 
+class TestIGE256KnownAnswer(unittest.TestCase):
+    # Expected output computed with the `cryptography` package's AES-256-ECB, chained by hand as
+    # IGE: c[i] = E(p[i] ^ c[i-1]) ^ p[i-1], with iv = c[-1] || p[-1]. The random tests only
+    # round-trip, so they cannot catch a cipher that is wrong but self-consistent.
+
+    key = bytes(range(32))
+    iv = bytes(range(32, 64))
+    plaintext = bytes((i * 7 + 3) & 0xff for i in range(64))
+    ciphertext = bytes.fromhex(
+        "62dde7a435afbc7bc6b16a3b7de42d3eaeb02459b457bf8ea35b5a86e0fb4e58"
+        "93593375f49ab3b91e6e1cff638a85f9500b4eacc2a0f85ad429fa84c07271c2"
+    )
+
+    def test_ige256_encrypt(self):
+        self.assertEqual(tgcrypto.ige256_encrypt(self.plaintext, self.key, self.iv), self.ciphertext)
+
+    def test_ige256_decrypt(self):
+        self.assertEqual(tgcrypto.ige256_decrypt(self.ciphertext, self.key, self.iv), self.plaintext)
+
+
 class TestIGE256Random(unittest.TestCase):
     DATA_CHUNK_MAX_SIZE = 64
     KEY_SIZE = 32

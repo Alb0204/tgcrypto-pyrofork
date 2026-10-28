@@ -29,6 +29,7 @@ Issues are disabled on upstream, so pull requests are the only intake.
 |---------|--------|
 | 1.2.9 | Every argument `Py_buffer` is released on validation errors too; `ctr256_*` never released `state` at all. Pinned by `tests/test_buffers.py`. |
 | 1.2.9 | `malloc` failures raise `MemoryError` instead of dereferencing `NULL`; inputs over 4 GiB raise `ValueError` instead of being truncated to `uint32_t`. |
+| 1.2.9 | AES word loads/stores are byte-wise big-endian instead of a cast to `uint32_t *` plus an unconditional swap, which produced wrong ciphertext on big-endian hosts (s390x failed the NIST CBC/CTR vectors) and was an unaligned access. `tests/ige` gained a known-answer test, because the random IGE tests only round-trip. |
 | 1.2.9 | Multi-phase module init declaring `Py_mod_gil` (no GIL needed) and per-interpreter GIL support. |
 | 1.2.9 | Wheels for CPython 3.10-3.15 (+3.14t/3.15t) and PyPy on Linux/macOS/Windows, all architectures cibuildwheel offers, published as GitHub release assets rather than to PyPI (the PyPI name is upstream's). |
 
